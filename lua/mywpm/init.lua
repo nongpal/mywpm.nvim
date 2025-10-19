@@ -54,7 +54,7 @@ local function checkNofity(wpm)
   end
 end
 
-local function visual(wpm)
+local function render(wpm)
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
     virt_text = { { options.virt_text(wpm), "Comment" } },
@@ -67,18 +67,18 @@ end
 
 local function tick()
   local now = uv.now()
-  local date_time = (now - stats.time) / 1000
+  local dt = (now - stats.time) / 1000
 
-  if date_time <= 0 then
+  if dt <= 0 then
     return
   end
 
   local words = vim.fn.wordcount().words
   local typed = words - stats.start_words
-  local wpm = typed / (date_time / 60)
+  local wpm = typed / (dt / 60)
 
   if options.show_virtual_text then
-    visual(wpm)
+    render(wpm)
   end
 end
 
