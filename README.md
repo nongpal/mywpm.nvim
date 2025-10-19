@@ -1,5 +1,4 @@
-# mywpm.nvim
-show your wpm on neovim
+![banner_image](.github/banner_plugin.png)
 
 ## Install with Lazy
 
