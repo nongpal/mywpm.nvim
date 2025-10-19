@@ -125,8 +125,8 @@ local function render(wpm)
 
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
-    virt_wpm = { { config.virt_wpm(wpm), "Comment" } },
-    virt_wpm_pos = config.virt_wpm_pos,
+    virt_text = { { config.virt_wpm(wpm), "Comment" } },
+    virt_text_pos = config.virt_wpm_pos,
     priority = 10,
   })
 
