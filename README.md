@@ -5,7 +5,7 @@ show your wpm on neovim
 
 ```lua
 {
-    "slowy07/mywpm.nvim"
+    "slowy07/mywpm.nvim",
     opts = {
         -- config options
         -- 1 minute
@@ -17,7 +17,7 @@ show your wpm on neovim
 
         virtual_text = function(wpm)
             return ("Speed: %0.f WPM"):format(wpm)
-        end
+        end,
 
         virtual_text_pos = "right_align"
     }
