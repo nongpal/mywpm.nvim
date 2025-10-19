@@ -45,6 +45,8 @@ local DEFAULT_OPTS = {
   virt_text_pos = "right_align",
 }
 
+local config = {}
+
 local function merge_options(user_opts)
   local merged = vim.deepcopy(DEFAULT_OPTS)
 
@@ -89,13 +91,13 @@ local function checkNofity(wpm)
 
   -- enforcing notification cooldown: skip if too shown since last alert
   local elapsed = now - last_notif_time
-  if elapsed < DEFAULT_OPTS.notify_interval then
+  if elapsed < config.notify_interval then
     return
   end
 
   -- notofication for high typing speed
-  if wpm > DEFAULT_OPTS.high then
-    vim.notify(DEFAULT_OPTS.high_msg, vim.log.levels.INFO)
+  if wpm > config.high then
+    vim.notify(config.high_msg, vim.log.levels.INFO)
     last_notif_time = now -- reset cooldown
     return                -- preventing low-speed notification in same window
   end
@@ -112,6 +114,10 @@ end
 --- @param wpm number current wpm to display
 --- @return nil
 local function render(wpm)
+  if not config.show_virtual_text then
+    return
+  end
+
   local buf = vim.api.nvim_get_current_buf()
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -119,13 +125,13 @@ local function render(wpm)
 
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
-    virt_text = { { DEFAULT_OPTS.virt_text(wpm), "Comment" } },
-    virt_text_pos = DEFAULT_OPTS.virt_text_pos,
+    virt_text = { { config.virt_text(wpm), "Comment" } },
+    virt_text_pos = config.virt_text_pos,
     priority = 10,
   })
 
   -- conditional trigger notification logic if enabled
-  if DEFAULT_OPTS.notify then
+  if config.notify then
     checkNofity(wpm)
   end
 end
@@ -142,9 +148,7 @@ local function tick()
   local typed = words - stats.start_words
   local wpm = typed / (dt / 60)
 
-  _G.mywpm_current_wpm = wpm
-
-  if DEFAULT_OPTS.show_virtual_text then
+  if config.show_virtual_text then
     render(wpm)
   end
 end
@@ -157,7 +161,7 @@ local function start_timer()
   stats.timer = uv.new_timer()
   stats.time = uv.now()
   stats.start_words = vim.fn.wordcount().words
-  stats.timer:start(0, DEFAULT_OPTS.update_time, vim.schedule_wrap(tick))
+  stats.timer:start(0, config.update_time, vim.schedule_wrap(tick))
 end
 
 local function stop_timer()
@@ -170,7 +174,7 @@ local function stop_timer()
 end
 
 function M.setup(opts)
-  merge_options(opts)
+  config = merge_options(opts)
   local group = vim.api.nvim_create_augroup("mywpm", { clear = true })
   vim.api.nvim_create_autocmd("InsertEnter", {
     group = group,
