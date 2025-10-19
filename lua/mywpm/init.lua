@@ -1,6 +1,6 @@
 local M = {}
 
-local ns = vim.api.nvim_create_namespace("Mywpm")
+local ns = vim.api.nvim_create_namespace("mywpm")
 local stats = { start_words = 0, time = 0, timer = nil }
 local last_notif_time = 0
 local uv = vim.uv
@@ -105,7 +105,7 @@ end
 
 function M.setup(opts)
   overridingOptions(opts)
-  local group = vim.api.nvim_create_augroup("Mywpm", { clear = true })
+  local group = vim.api.nvim_create_augroup("mywpm", { clear = true })
   vim.api.nvim_create_autocmd("InsertEnter", {
     group = group,
     callback = start_timer,
