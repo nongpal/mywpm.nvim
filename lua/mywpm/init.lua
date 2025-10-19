@@ -45,17 +45,31 @@ local DEFAULT_OPTS = {
   virt_text_pos = "right_align",
 }
 
+local function merge_options(user_opts)
+  local merged = vim.deepcopy(DEFAULT_OPTS)
 
-local function overridingOptions(opts)
-  opts = opts or {}
-  DEFAULT_OPTS.notify_interval = opts.notify_interval or DEFAULT_OPTS.notify_interval
-  DEFAULT_OPTS.high = opts.high or DEFAULT_OPTS.high
-  DEFAULT_OPTS.high_msg = opts.high_msg or DEFAULT_OPTS.high_msg
-  DEFAULT_OPTS.show_virtual_text = opts.show_virtual_text or DEFAULT_OPTS.show_virtual_text
-  DEFAULT_OPTS.notify = opts.notify or DEFAULT_OPTS.notify
-  DEFAULT_OPTS.update_time = opts.update_time or DEFAULT_OPTS.update_time
-  DEFAULT_OPTS.virt_text = opts.virt_text or DEFAULT_OPTS.virt_text
-  DEFAULT_OPTS.virt_text_pos = opts.virt_text_pos or DEFAULT_OPTS.virt_text_pos
+  if not user_opts then
+    return merged
+  end
+
+  if type(user_opts) ~= "table" then
+    vim.notify(
+      "mywpm: Invalid options type provided to setup() - expect table, got " .. type(user_opts), vim.log.levels.WARN
+    )
+    return merged
+  end
+
+  for key, value in pairs(user_opts) do
+    if merged[key] ~= nil then
+      merged[key] = value
+    else
+      vim.notify(
+        "mywpm: Unknown config key '" .. tostring(key) .. "' provide to setup()", vim.log.levels.WARN
+      )
+    end
+  end
+
+  return merged
 end
 
 --- check whether wpm-based notification should be shown
@@ -156,7 +170,7 @@ local function stop_timer()
 end
 
 function M.setup(opts)
-  overridingOptions(opts)
+  merge_options(opts)
   local group = vim.api.nvim_create_augroup("mywpm", { clear = true })
   vim.api.nvim_create_autocmd("InsertEnter", {
     group = group,
