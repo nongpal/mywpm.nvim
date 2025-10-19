@@ -30,7 +30,7 @@ local uv = vim.uv
 --- @field notify boolean whether to show notification at all (default: true)
 --- @field virt_text fun(wpm: number): string function to format virtual text
 --- @field virt_text_pos string position of virtual text
-local options = {
+local DEFAULT_OPTS = {
   notify_interval = 60 * 1000,
   high = 60,
   low = 15,
@@ -48,16 +48,24 @@ local options = {
 
 local function overridingOptions(opts)
   opts = opts or {}
-  options.notify_interval = opts.notify_interval or options.notify_interval
-  options.high = opts.high or options.high
-  options.high_msg = opts.high_msg or options.high_msg
-  options.show_virtual_text = opts.show_virtual_text or options.show_virtual_text
-  options.notify = opts.notify or options.notify
-  options.update_time = opts.update_time or options.update_time
-  options.virt_text = opts.virt_text or options.virt_text
-  options.virt_text_pos = opts.virt_text_pos or options.virt_text_pos
+  DEFAULT_OPTS.notify_interval = opts.notify_interval or DEFAULT_OPTS.notify_interval
+  DEFAULT_OPTS.high = opts.high or DEFAULT_OPTS.high
+  DEFAULT_OPTS.high_msg = opts.high_msg or DEFAULT_OPTS.high_msg
+  DEFAULT_OPTS.show_virtual_text = opts.show_virtual_text or DEFAULT_OPTS.show_virtual_text
+  DEFAULT_OPTS.notify = opts.notify or DEFAULT_OPTS.notify
+  DEFAULT_OPTS.update_time = opts.update_time or DEFAULT_OPTS.update_time
+  DEFAULT_OPTS.virt_text = opts.virt_text or DEFAULT_OPTS.virt_text
+  DEFAULT_OPTS.virt_text_pos = opts.virt_text_pos or DEFAULT_OPTS.virt_text_pos
 end
 
+--- check whether wpm-based notification should be shown
+---
+--- this function enforcing min time between notification
+--- and only trigger one notification per cooldown window
+--- even if both high and low threshold are crossed (which shouldn't happen)
+---
+--- @param wpm number current word per minute value
+--- @return nil
 local function checkNofity(wpm)
   local now = uv.now()
   if last_notif_time == 0 then
@@ -65,28 +73,45 @@ local function checkNofity(wpm)
     return
   end
 
-  if now - last_notif_time < options.notify_interval then
+  -- enforcing notification cooldown: skip if too shown since last alert
+  local elapsed = now - last_notif_time
+  if elapsed < DEFAULT_OPTS.notify_interval then
     return
   end
 
-  if wpm > options.high then
-    vim.notify(options.high_msg, vim.log.levels.INFO)
-    last_notif_time = now
+  -- notofication for high typing speed
+  if wpm > DEFAULT_OPTS.high then
+    vim.notify(DEFAULT_OPTS.high_msg, vim.log.levels.INFO)
+    last_notif_time = now -- reset cooldown
+    return                -- preventing low-speed notification in same window
   end
 
-  if wpm < options.low then
-    vim.notify(options.low_message, vim.log.levels.WARN)
+  if wpm < DEFAULT_OPTS.low then
+    vim.notify(DEFAULT_OPTS.low_message, vim.log.levels.WARN)
     last_notif_time = now
   end
 end
 
+--- rendering current WPM as virtual text in the active buffer
+--- virtual text appears as non-intrusive update to reflect real-time changer
+---
+--- @param wpm number current wpm to display
+--- @return nil
 local function render(wpm)
+  local buf = vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
-    virt_text = { { options.virt_text(wpm), "Comment" } },
-    virt_text_pos = options.virt_text_pos,
+    virt_text = { { DEFAULT_OPTS.virt_text(wpm), "Comment" } },
+    virt_text_pos = DEFAULT_OPTS.virt_text_pos,
+    priority = 10,
   })
-  if options.notify then
+
+  -- conditional trigger notification logic if enabled
+  if DEFAULT_OPTS.notify then
     checkNofity(wpm)
   end
 end
@@ -105,7 +130,7 @@ local function tick()
 
   _G.mywpm_current_wpm = wpm
 
-  if options.show_virtual_text then
+  if DEFAULT_OPTS.show_virtual_text then
     render(wpm)
   end
 end
@@ -118,7 +143,7 @@ local function start_timer()
   stats.timer = uv.new_timer()
   stats.time = uv.now()
   stats.start_words = vim.fn.wordcount().words
-  stats.timer:start(0, options.update_time, vim.schedule_wrap(tick))
+  stats.timer:start(0, DEFAULT_OPTS.update_time, vim.schedule_wrap(tick))
 end
 
 local function stop_timer()
