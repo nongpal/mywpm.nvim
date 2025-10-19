@@ -121,21 +121,21 @@ function M.setup(opts)
   })
 end
 
-function M.get_wpm()
-  if not stats.timer then
-    return 0
-  end
-
-  local now = vim.uv.now()
-  local date_time = (now - stats.time) / 1000
-  if date_time <= 0 then
-    return 0
-  end
-
-  local words = vim.fn.wordcount().words
-  local typed = words - stats.start_words
-  local wpm = typed / (date_time / 60)
-  return wpm
-end
+-- function M.get_wpm()
+--   if not stats.timer then
+--     return 0
+--   end
+--
+--   local now = vim.uv.now()
+--   local date_time = (now - stats.time) / 1000
+--   if date_time <= 0 then
+--     return 0
+--   end
+--
+--   local words = vim.fn.wordcount().words
+--   local typed = words - stats.start_words
+--   local wpm = typed / (date_time / 60)
+--   return wpm
+-- end
 
 return M
