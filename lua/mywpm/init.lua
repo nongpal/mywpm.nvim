@@ -17,7 +17,7 @@ local options = {
   virtual_text = function(wpm)
     return ("Speed: %.0f WPM"):format(wpm)
   end,
-  virtual_text_pos = "right_align",
+  virt_text_pos = "right_align",
 }
 
 local function overridingOptions(opts)
@@ -29,7 +29,7 @@ local function overridingOptions(opts)
   options.notify = opts.notify or options.notify
   options.update_time = opts.update_time or options.update_time
   options.virtual_text = opts.virtual_text or options.virtual_text
-  options.virtual_text_pos = opts.virtual_text_pos or options.virtual_text_pos
+  options.virt_text_pos = opts.virt_text_pos or options.virt_text_pos
 end
 
 local function checkNofity(wpm)
@@ -58,7 +58,7 @@ local function visual(wpm)
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
     virtual_text = { { options.virtual_text(wpm), "Comment" } },
-    virtual_text_pos = options.virtual_text_pos,
+    virt_text_pos = options.virt_text_pos,
   })
   if options.notify then
     checkNofity(wpm)
