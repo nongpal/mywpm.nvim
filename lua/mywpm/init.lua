@@ -77,6 +77,8 @@ local function tick()
   local typed = words - stats.start_words
   local wpm = typed / (dt / 60)
 
+  _G.mywpm_current_wpm = wpm
+
   if options.show_virtual_text then
     render(wpm)
   end
