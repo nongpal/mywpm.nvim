@@ -22,6 +22,15 @@
             -- show notify and virtual text
             show_virtual_text = true,
             notify = true,
+             -- interval update time
+            update_time = 300,
+            -- overriding function to showing format
+            virt_wpm = function(wpm)
+                return ("👨‍💻 Speed: %.0f WPM"):format(wpm)
+            end,
+            -- position of virtual wpm position
+            -- available `eol`, `right_align`, `inline`
+            virt_wpm_pos = "right_align",
         })
     end
 }

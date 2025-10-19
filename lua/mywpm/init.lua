@@ -25,24 +25,24 @@ local uv = vim.uv
 --- @field high integer wpm threshold for "high speed" notification (default: 60)
 --- @field low integer wpm threshold for "low speed" notification (default: 15)
 --- @field high_msg string message show when wpm got high
---- @field low_message string message when wpm got low
+--- @field low_msg string message when wpm got low
 --- @field show_virtual_text boolean whether to show wpm as virtual text (default: true)
 --- @field notify boolean whether to show notification at all (default: true)
---- @field virt_text fun(wpm: number): string function to format virtual text
---- @field virt_text_pos string position of virtual text
+--- @field virt_wpm fun(wpm: number): string function to format virtual text
+--- @field virt_wpm_pos string position of virtual text
 local DEFAULT_OPTS = {
   notify_interval = 60 * 1000,
   high = 60,
   low = 15,
   high_msg = "nice keep it up 🔥",
-  low_message = "hahaha slowhand 🐌",
+  low_msg = "hahaha slowhand 🐌",
   show_virtual_text = true,
   notify = true,
   update_time = 300,
-  virt_text = function(wpm)
+  virt_wpm = function(wpm)
     return ("👨‍💻 Speed: %.0f WPM"):format(wpm)
   end,
-  virt_text_pos = "right_align",
+  virt_wpm_pos = "eol",
 }
 
 local config = {}
@@ -102,8 +102,8 @@ local function checkNofity(wpm)
     return                -- preventing low-speed notification in same window
   end
 
-  if wpm < DEFAULT_OPTS.low then
-    vim.notify(DEFAULT_OPTS.low_message, vim.log.levels.WARN)
+  if wpm < config.low then
+    vim.notify(config.low_msg, vim.log.levels.WARN)
     last_notif_time = now
   end
 end
@@ -125,8 +125,8 @@ local function render(wpm)
 
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
-    virt_text = { { config.virt_text(wpm), "Comment" } },
-    virt_text_pos = config.virt_text_pos,
+    virt_wpm = { { config.virt_wpm(wpm), "Comment" } },
+    virt_wpm_pos = config.virt_wpm_pos,
     priority = 10,
   })
 
