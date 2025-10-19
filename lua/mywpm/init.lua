@@ -56,7 +56,10 @@ end
 
 local function visual(wpm)
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
-
+  vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
+    virtual_text = { { options.virtual_text(wpm), "Comment" } },
+    virtual_text_pos = options.virtual_text_pos,
+  })
   if options.notify then
     checkNofity(wpm)
   end
