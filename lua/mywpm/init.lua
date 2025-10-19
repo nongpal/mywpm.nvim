@@ -1,24 +1,50 @@
+--- @module "mypwm"
+--- track realtime words per minute (WPM) during coding
+
 local M = {}
 
+--- neovim namespace for virtual text extmarks
 local ns = vim.api.nvim_create_namespace("mywpm")
+
+--- internal state tracking type session
+--- @class stat
+--- @field start_words number word count sessions start
+--- @field time number start time in millisecond (check on vim.uv.now())
+--- @field timer? uv.uv_timer_t timer handler
 local stats = { start_words = 0, time = 0, timer = nil }
+
+--- timestamp last notif (to get enforce cooldown)
 local last_notif_time = 0
+
+--- alias
 local uv = vim.uv
 
+--- default plugin options
+--- @class wpm_option
+--- @field notify_interval integer time (ms) between from notification
+--- @field high integer wpm threshold for "high speed" notification (default: 60)
+--- @field low integer wpm threshold for "low speed" notification (default: 15)
+--- @field high_msg string message show when wpm got high
+--- @field low_message string message when wpm got low
+--- @field show_virtual_text boolean whether to show wpm as virtual text (default: true)
+--- @field notify boolean whether to show notification at all (default: true)
+--- @field virt_text fun(wpm: number): string function to format virtual text
+--- @field virt_text_pos string position of virtual text
 local options = {
   notify_interval = 60 * 1000,
   high = 60,
   low = 15,
-  high_msg = "nice keep it up",
-  low_message = "hahaha slowhand",
+  high_msg = "nice keep it up 🔥",
+  low_message = "hahaha slowhand 🐌",
   show_virtual_text = true,
   notify = true,
   update_time = 300,
   virt_text = function(wpm)
-    return ("Speed: %.0f WPM"):format(wpm)
+    return ("👨‍💻 Speed: %.0f WPM"):format(wpm)
   end,
   virt_text_pos = "right_align",
 }
+
 
 local function overridingOptions(opts)
   opts = opts or {}
