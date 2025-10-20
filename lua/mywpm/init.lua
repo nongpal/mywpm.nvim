@@ -11,7 +11,7 @@ local ns = vim.api.nvim_create_namespace("mywpm")
 --- @field start_words number word count sessions start
 --- @field time number start time in millisecond (check on vim.uv.now())
 --- @field timer? uv.uv_timer_t timer handler
-local stats = { start_words = 0, time = 0, timer = nil, extmark_id = nil }
+local stats = { start_words = 0, time = 0, timer = nil, extmark_id = nil, current_wpm = 0 }
 
 --- timestamp last notif (to get enforce cooldown)
 local last_notif_time = 0
@@ -163,6 +163,7 @@ local function tick()
   local words = vim.fn.wordcount().words
   local typed = words - stats.start_words
   local wpm = typed / (dt / 60)
+  stats.current_wpm = wpm
 
   if config.show_virtual_text then
     render(wpm)
@@ -177,6 +178,7 @@ local function start_timer()
   stats.timer = uv.new_timer()
   stats.time = uv.now()
   stats.start_words = vim.fn.wordcount().words
+  stats.current_wpm = 0
 
   if stats.extmark_id then
     local buf = vim.api.nvim_get_current_buf()
@@ -199,6 +201,8 @@ local function stop_timer()
     pcall(vim.api.nvim_buf_del_extmark, buf, ns, stats.extmark_id)
     stats.extmark_id = nil
   end
+
+  stats.current_wpm = 0
 end
 
 function M.setup(opts)
@@ -224,8 +228,7 @@ function M.setup(opts)
       group = group,
       callback = function()
         if stats.timer and config.show_virtual_text then
-          local wpm = M.get_wpm()
-          render(wpm)
+          render(stats.current_wpm)
         end
       end
     })
@@ -233,20 +236,7 @@ function M.setup(opts)
 end
 
 function M.get_wpm()
-  if not stats.timer then
-    return 0
-  end
-
-  local now = vim.uv.now()
-  local dt = (now - stats.time) / 1000
-  if dt <= 0 then
-    return 0
-  end
-
-  local words = vim.fn.wordcount().words
-  local typed = words - stats.start_words
-  local wpm = typed / (dt / 60)
-  return wpm
+  return stats.current_wpm or 0
 end
 
 return M
