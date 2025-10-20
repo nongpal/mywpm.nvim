@@ -11,7 +11,7 @@ local ns = vim.api.nvim_create_namespace("mywpm")
 --- @field start_words number word count sessions start
 --- @field time number start time in millisecond (check on vim.uv.now())
 --- @field timer? uv.uv_timer_t timer handler
-local stats = { start_words = 0, time = 0, timer = nil }
+local stats = { start_words = 0, time = 0, timer = nil, extmark_id = nil }
 
 --- timestamp last notif (to get enforce cooldown)
 local last_notif_time = 0
@@ -43,6 +43,7 @@ local DEFAULT_OPTS = {
     return ("👨‍💻 Speed: %.0f WPM"):format(wpm)
   end,
   virt_wpm_pos = "eol",
+  follow_cursor = false,
 }
 
 local config = {}
@@ -123,8 +124,23 @@ local function render(wpm)
     return
   end
 
-  vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
-  vim.api.nvim_buf_set_extmark(0, ns, 0, 0, {
+  if stats.extmark_id then
+    pcall(vim.api.nvim_buf_del_extmark, buf, ns, stats.extmark_id)
+    stats.extmark_id = nil
+  end
+
+  local line, col
+
+  if config.follow_cursor then
+    local cursor_pos = vim.api.nvim_win_get_cursor(0)
+    line = cursor_pos[1] - 1
+    col = cursor_pos[2]
+  else
+    line = 0
+    col = 0
+  end
+
+  stats.extmark_id = vim.api.nvim_buf_set_extmark(buf, ns, line, col, {
     virt_text = { { config.virt_wpm(wpm), "Comment" } },
     virt_text_pos = config.virt_wpm_pos,
     priority = 10,
@@ -161,6 +177,13 @@ local function start_timer()
   stats.timer = uv.new_timer()
   stats.time = uv.now()
   stats.start_words = vim.fn.wordcount().words
+
+  if stats.extmark_id then
+    local buf = vim.api.nvim_get_current_buf()
+    pcall(vim.api.nvim_buf_del_extmark, buf, ns, stats.extmark_id)
+    stats.extmark_id = nil
+  end
+
   stats.timer:start(0, config.update_time, vim.schedule_wrap(tick))
 end
 
@@ -170,7 +193,12 @@ local function stop_timer()
     stats.timer:close()
     stats.timer = nil
   end
-  vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+
+  if stats.extmark_id then
+    local buf = vim.api.nvim_get_current_buf()
+    pcall(vim.api.nvim_buf_del_extmark, buf, ns, stats.extmark_id)
+    stats.extmark_id = nil
+  end
 end
 
 function M.setup(opts)
@@ -190,6 +218,18 @@ function M.setup(opts)
     group = group,
     callback = stop_timer,
   })
+
+  if config.follow_cursor then
+    vim.api.nvim_create_autocmd("CursorMovedI", {
+      group = group,
+      callback = function()
+        if stats.timer and config.show_virtual_text then
+          local wpm = M.get_wpm()
+          render(wpm)
+        end
+      end
+    })
+  end
 end
 
 function M.get_wpm()
